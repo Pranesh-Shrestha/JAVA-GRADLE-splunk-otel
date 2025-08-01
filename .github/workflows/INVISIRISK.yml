@@ -1,0 +1,60 @@
+name: Java Project
+
+on:
+  workflow_dispatch:
+
+permissions:
+  checks: write
+  contents: write
+  packages: read
+
+jobs:
+  java-application-build:
+    runs-on: ubuntu-latest
+    name: Run build
+    steps:
+      - name: Setup PSE
+        uses: invisirisk/pse-action@latest
+        with:
+          api_url: "https://app.invisirisk.com"
+          app_token: ${{ secrets.IR_API_KEY_NA_PROD }}
+
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17' 
+
+      - name: Java Trust Store
+        run: |
+          keytool -importcert \
+          -noprompt \
+          -trustcacerts \
+          -alias custom-proxy \
+          -file /etc/ssl/certs/pse.pem \
+          -keystore "$JAVA_HOME/lib/security/cacerts" \
+          -storepass changeit
+
+      - name: Build dependencies
+        run: gradle build --dry-run
+
+      - name: Cleanup PSE
+        if: always()
+        uses: invisirisk/pse-action@latest
+        with:
+          cleanup: "true"
+
+  gather_analytics:
+   runs-on: ubuntu-latest
+   name: Gather Analytics
+   needs: java-application-build
+   if: always()
+   steps:
+   - name: Gather Status
+     uses: invisirisk/pse-action@latest
+     with:
+      api_url: "https://app.invisirisk.com"
+      app_token: ${{ secrets.IR_API_KEY_NA_PROD }}
+      send_job_status: "true"
