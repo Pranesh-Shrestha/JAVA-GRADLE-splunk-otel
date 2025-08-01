@@ -27,18 +27,29 @@ jobs:
           distribution: 'temurin'
           java-version: '17' 
 
-      - name: Java Trust Store
+      - name: Set truststore paths
+        run: |
+          echo "JAVA_CACERTS=$JAVA_HOME/lib/security/cacerts" >> $GITHUB_ENV
+          echo "CUSTOM_CACERTS=/tmp/cacerts" >> $GITHUB_ENV
+
+      - name: Copy default cacerts to a writable location
+        run: cp "$JAVA_CACERTS" "$CUSTOM_CACERTS"
+
+      - name: Import proxy cert into custom truststore
         run: |
           keytool -importcert \
-          -noprompt \
-          -trustcacerts \
-          -alias custom-proxy \
-          -file /etc/ssl/certs/pse.pem \
-          -keystore "$JAVA_HOME/lib/security/cacerts" \
-          -storepass changeit
+            -noprompt \
+            -trustcacerts \
+            -alias custom-proxy \
+            -file /etc/ssl/certs/pse.pem \
+            -keystore "$CUSTOM_CACERTS" \
+            -storepass changeit
 
-      - name: Build dependencies
-        run: gradle build --dry-run
+      - name: Build with Gradle using custom truststore
+        run: |
+          ./gradlew build \
+            -Djavax.net.ssl.trustStore="$CUSTOM_CACERTS" \
+            -Djavax.net.ssl.trustStorePassword=changeit
 
       - name: Cleanup PSE
         if: always()
