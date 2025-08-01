@@ -32,8 +32,10 @@ jobs:
           echo "JAVA_CACERTS=$JAVA_HOME/lib/security/cacerts" >> $GITHUB_ENV
           echo "CUSTOM_CACERTS=/tmp/cacerts" >> $GITHUB_ENV
 
-      - name: Copy default cacerts to a writable location
-        run: cp "$JAVA_CACERTS" "$CUSTOM_CACERTS"
+      - name: Copy default cacerts and make it writable
+        run: |
+          cp "$JAVA_HOME/lib/security/cacerts" /tmp/cacerts
+          chmod 644 /tmp/cacerts
 
       - name: Import proxy cert into custom truststore
         run: |
@@ -42,8 +44,9 @@ jobs:
             -trustcacerts \
             -alias custom-proxy \
             -file /etc/ssl/certs/pse.pem \
-            -keystore "$CUSTOM_CACERTS" \
+            -keystore /tmp/cacerts \
             -storepass changeit
+
 
       - name: Build with Gradle using custom truststore
         run: |
