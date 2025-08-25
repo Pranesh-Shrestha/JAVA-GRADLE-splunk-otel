@@ -45,7 +45,6 @@ dependencies {
     implementation("org.assertj:assertj-core:3.27.4")
     implementation("com.google.auto:auto-common:1.2.1")
     implementation("com.google.auto.service:auto-service:1.1.1")
-    implementation("rities.add("com.google.auto.service:auto-service-annotations:1.1.1")
     implementation("com.google.auto.value:auto-value:1.11.0")
     implementation("com.google.auto.value:auto-value-annotations:1.11.0")
     implementation("org.awaitility:awaitility:4.3.0")
