@@ -4,6 +4,7 @@ import org.gradle.api.file.DuplicatesStrategy
 
 plugins {
     `java-library`
+    // Remove version specification to use the version already on classpath
     id("com.github.johnrengelman.shadow")
 }
 
@@ -337,7 +338,7 @@ tasks.named<ShadowJar>("shadowJar") {
 
     dependsOn(isolateJavaagentLibs)
 
-    from(isolateJavaagentLibs.get().outputs)
+    from(isolateJavaagentLibs)
 
     filesMatching("META-INF/licenses/licenses.md") {
         path = path.replace("licenses.md", "licenses-splunk-otel-java.md")
