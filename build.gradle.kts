@@ -1,6 +1,10 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import org.gradle.jvm.tasks.Jar
+import org.gradle.api.file.DuplicatesStrategy
+
 plugins {
-    java
     `java-library`
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 repositories {
@@ -305,16 +309,54 @@ dependencies {
     implementation("io.zipkin.reporter2:zipkin-sender-okhttp3:3.5.1")
 }
 
-// Define custom configurations for bootstrapLibs and upstreamAgent
+// Define custom configurations
 val bootstrapLibs by configurations.creating
 val upstreamAgent by configurations.creating
+
+// Copy task for isolating javaagent libs
 val isolateJavaagentLibs by tasks.register<Copy>("isolateJavaagentLibs") {
     from(bootstrapLibs, upstreamAgent)
     into(layout.buildDirectory.dir("javaagent-libs"))
 }
 
+// Disable normal jar task (we only want shadowJar)
+tasks.named<Jar>("jar") {
+    enabled = false
+}
+
+// Process resources (licenses folder into META-INF)
 tasks.processResources {
     from(rootProject.file("licenses")) {
         into("META-INF/licenses")
+    }
+}
+
+// Configure shadowJar
+tasks.named<ShadowJar>("shadowJar") {
+    configurations = listOf(bootstrapLibs, upstreamAgent)
+
+    dependsOn(isolateJavaagentLibs)
+
+    from(isolateJavaagentLibs.get().outputs)
+
+    filesMatching("META-INF/licenses/licenses.md") {
+        path = path.replace("licenses.md", "licenses-splunk-otel-java.md")
+    }
+
+    archiveClassifier.set("all")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    manifest {
+        attributes["Implementation-Title"] = "Splunk OTel Java"
+    }
+}
+
+// Example: task that depends on shadowJar
+tasks.register<Jar>("mainShadowJarWrapper") {
+    val shadow = tasks.named<ShadowJar>("shadowJar")
+    dependsOn(shadow)
+    from(zipTree(shadow.get().archiveFile))
+    manifest {
+        attributes(shadow.get().manifest.attributes)
     }
 }
