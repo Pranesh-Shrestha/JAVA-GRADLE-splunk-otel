@@ -313,44 +313,8 @@ val isolateJavaagentLibs by tasks.register<Copy>("isolateJavaagentLibs") {
     into(layout.buildDirectory.dir("javaagent-libs"))
 }
 
-tasks.jar {
-    enabled = false
-}
-
 tasks.processResources {
     from(rootProject.file("licenses")) {
         into("META-INF/licenses")
     }
-}
-
-tasks.shadowJar {
-    configurations = listOf(project.configurations.runtimeClasspath.get(), bootstrapLibs, upstreamAgent)
-    dependsOn(tasks.named("isolateJavaagentLibs"))
-    from(tasks.named("isolateJavaagentLibs").get().outputs)
-    filesMatching("META-INF/licenses/licenses.md") {
-        path = path.replace("licenses.md", "licenses-splunk-otel-java.md")
-    }
-    archiveClassifier.set("all")
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    manifest {
-        attributes(
-            "Premain-Class" to "io.opentelemetry.javaagent.OpenTelemetryAgent",
-            "Agent-Class" to "io.opentelemetry.javaagent.OpenTelemetryAgent",
-            "Can-Retransform-Classes" to "true",
-            "Can-Redefine-Classes" to "true"
-        )
-    }
-}
-
-// Example task to create a mainShadowJar (adjust as needed)
-val mainShadowJar by tasks.register<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("mainShadowJar") {
-    from(zipTree(tasks.shadowJar.get().archiveFile))
-    archiveClassifier.set("main")
-    manifest {
-        attributes(tasks.shadowJar.get().manifest.attributes)
-    }
-}
-
-tasks.build {
-    dependsOn(tasks.shadowJar, mainShadowJar)
 }
