@@ -1,4 +1,4 @@
-name: Java Project
+name: Java Project 3
 
 on:
   workflow_dispatch:
@@ -13,13 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     name: Run build
     steps:
-      # ============= InvisiRisk Setup =============
-      - name: Setup PSE
-        uses: invisirisk/pse-action@latest
-        with:
-          api_url: "https://app.dev.invisirisk.com"
-          app_token: ${{secrets.IR_API_KEY}}
-      # ============= InvisiRisk Setup End =============
       - uses: actions/checkout@v4
 
       - name: Set up Java
@@ -54,10 +47,4 @@ jobs:
           ./gradlew build \
             -Djavax.net.ssl.trustStore="$CUSTOM_CACERTS" \
             -Djavax.net.ssl.trustStorePassword=changeit
-      # ============= InvisiRisk Cleanup =============
-      - name: Cleanup PSE
-        if: always()
-        uses: invisirisk/pse-action@latest
-        with:
-          cleanup: "true"
-      # ============= InvisiRisk Cleanup End =============
+    
