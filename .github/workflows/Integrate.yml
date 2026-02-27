@@ -1,0 +1,50 @@
+name: Java Project
+
+on:
+  workflow_dispatch:
+
+permissions:
+  checks: write
+  contents: write
+  packages: read
+
+jobs:
+  java-application-build:
+    runs-on: ubuntu-latest
+    name: Run build
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17' 
+
+      - name: Set truststore paths
+        run: |
+          echo "JAVA_CACERTS=$JAVA_HOME/lib/security/cacerts" >> $GITHUB_ENV
+          echo "CUSTOM_CACERTS=/tmp/cacerts" >> $GITHUB_ENV
+
+      - name: Copy default cacerts and make it writable
+        run: |
+          cp "$JAVA_HOME/lib/security/cacerts" /tmp/cacerts
+          chmod 644 /tmp/cacerts
+
+      - name: Import proxy cert into custom truststore
+        run: |
+          keytool -importcert \
+            -noprompt \
+            -trustcacerts \
+            -alias custom-proxy \
+            -file /etc/ssl/certs/pse.pem \
+            -keystore /tmp/cacerts \
+            -storepass changeit
+
+
+      - name: Build with Gradle using custom truststore
+        run: |
+          ./gradlew build \
+            -Djavax.net.ssl.trustStore="$CUSTOM_CACERTS" \
+            -Djavax.net.ssl.trustStorePassword=changeit
